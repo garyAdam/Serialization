@@ -6,12 +6,13 @@ using System.Runtime.Serialization.Formatters.Binary;
 namespace SerializePeople
 {
     [Serializable]
-    public class Person : IDeserializationCallback
+    public class Person : IDeserializationCallback, ISerializable
     {
         protected string name;
         protected DateTime birthDate;
         [NonSerialized]
         private int age;
+        private Gender gender;
 
         public Person()
         {
@@ -25,9 +26,18 @@ namespace SerializePeople
             Age = DateTime.Today.Year - birthDate.Year;
         }
 
+        public Person(
+           SerializationInfo info,
+           StreamingContext context)
+        {
+            name = (string)info.GetValue("name", typeof(string));
+            birthDate = (DateTime)info.GetValue("birthDate", typeof(DateTime));
+            gender = (Gender)info.GetValue("gender", typeof(Gender));
+        }
+
         public int Age { get => age; set => age = value; }
 
-        public Gender Gender { get; set; }
+        public Gender Gender { get => gender; set => gender = value; }
 
         public DateTime BirthDate
         {
@@ -92,6 +102,13 @@ namespace SerializePeople
         public void OnDeserialization(object sender)
         {
             Age = DateTime.Today.Year - birthDate.Year;
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("name", name, typeof(string));
+            info.AddValue("birthDate", birthDate, typeof(DateTime));
+            info.AddValue("gender", gender, typeof(Gender));
         }
     }
 }
