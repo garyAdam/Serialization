@@ -6,10 +6,12 @@ using System.Runtime.Serialization.Formatters.Binary;
 namespace SerializePeople
 {
     [Serializable]
-    public class Person
+    public class Person : IDeserializationCallback
     {
         protected string name;
         protected DateTime birthDate;
+        [NonSerialized]
+        private int age;
 
         public Person()
         {
@@ -22,7 +24,8 @@ namespace SerializePeople
             this.birthDate = birthDate;
             Age = DateTime.Today.Year - birthDate.Year;
         }
-        public int Age { get; set; }
+
+        public int Age { get => age; set => age = value; }
 
         public Gender Gender { get; set; }
 
@@ -52,17 +55,22 @@ namespace SerializePeople
             {
                 File.Delete(output);
             }
-            Stream stream = new FileStream(output, FileMode.Create, FileAccess.Write, FileShare.None);
-            IFormatter formatter = new BinaryFormatter();
-            formatter.Serialize(stream, this);
-            stream.Close();
+            using (Stream stream = new FileStream(output, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                IFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, this);
+            }
         }
 
         public static Person Deserialize(string path)
         {
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+            Person person;
             IFormatter formatter = new BinaryFormatter();
-            return formatter.Deserialize(stream) as Person;
+            using (Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                person = formatter.Deserialize(stream) as Person;
+            }
+            return person;
         }
 
         public override bool Equals(Object obj)
@@ -79,6 +87,11 @@ namespace SerializePeople
         public override int GetHashCode()
         {
             return HashCode.Combine(name, birthDate, Age, Gender, BirthDate, Name);
+        }
+
+        public void OnDeserialization(object sender)
+        {
+            Age = DateTime.Today.Year - birthDate.Year;
         }
     }
 }
